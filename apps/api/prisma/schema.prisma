@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum Role {
+  owner
+  admin
+  member
+}
+enum MeetingStatus {
+  pending
+  processing
+  completed
+  failed
+}
+enum ActionStatus {
+  todo
+  in_progress
+  done
+}
+enum Priority {
+  low
+  medium
+  high
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  email String @unique
+  passwordHash String
+  emailVerified Boolean @default(false)
+  authTokens AuthToken[]
+  avatarUrl String?
+  timezone String @default("Africa/Lagos")
+  settings Json @default("{}")
+  totpSecret String?
+  totpEnabled Boolean @default(false)
+  totpBackupCodes Json @default("[]")
+  createdAt DateTime @default(now())
+  uploadedMeetings Meeting[] @relation("UploadedMeetings")
+  assignedActions ActionItem[] @relation("AssignedActions")
+  createdActions ActionItem[] @relation("CreatedActions")
+  participants Participant[]
+  apiKeys ApiKey[]
+  owned WorkSpace[]
+  memberships WorkspaceMember[]
+  sessions Session[]
+  notifications Notification[]
+}
+model WorkSpace {
+  id String @id @default(uuid()) @db.Uuid
+  ownerId String @db.Uuid
+  owner User @relation(fields:[ownerId],references:[id])
+  name String
+  slug String @unique
+  description String @default("")
+  referredBy String?
+  plan String @default("starter")
+  defaultLanguage String @default("en")
+  actionDueDays Int @default(7)
+  confidenceThreshold Float @default(0.7)
+  maxSpeakers Int @default(10)
+  settings Json @default("{}")
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String?
+  createdAt DateTime @default(now())
+  sessions Session[]
+  notifications Notification[]
+  members WorkspaceMember[]
+  meetings Meeting[]
+  actions ActionItem[]
+  invites Invitation[]
+  integrations Integration[]
+  webhooks Webhook[]
+  keys ApiKey[]
+  logs AuditLog[]
+}
+model WorkspaceMember {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  role Role @default(member)
+  joinedAt DateTime @default(now())
+  @@unique([workspaceId,userId])
+}
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  refreshHash String @unique
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  userAgent String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+model Meeting {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  uploadedBy String @db.Uuid
+  uploader User @relation("UploadedMeetings",fields:[uploadedBy],references:[id],onDelete:Cascade)
+  title String
+  date DateTime @default(now())
+  status MeetingStatus @default(pending)
+  externalId String?
+  storageUrl String?
+  source String @default("upload")
+  durationSeconds Int @default(0)
+  language String @default("en")
+  isPrivate Boolean @default(false)
+  context String @default("")
+  stage String @default("upload")
+  progress Int @default(0)
+  runVersion Int @default(1)
+  cancelled Boolean @default(false)
+  error String?
+  processedAt DateTime?
+  createdAt DateTime @default(now())
+  transcript Transcript?
+  summary Summary?
+  actions ActionItem[]
+  participants Participant[]
+  uploads Upload[]
+  @@unique([workspaceId,source,externalId])
+  @@index([workspaceId,createdAt])
+}
+model Transcript {
+  id String @id @default(uuid()) @db.Uuid
+  meetingId String @unique @db.Uuid
+  meeting Meeting @relation(fields:[meetingId],references:[id],onDelete:Cascade)
+  fullText String
+  segments Json
+  speakerCount Int
+  createdAt DateTime @default(now())
+}
+model Summary {
+  id String @id @default(uuid()) @db.Uuid
+  meetingId String @unique @db.Uuid
+  meeting Meeting @relation(fields:[meetingId],references:[id],onDelete:Cascade)
+  content String
+  keyDecisions Json
+  topics Json
+  sentiment String @default("neutral")
+  createdAt DateTime @default(now())
+}
+model ActionItem {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  meetingId String? @db.Uuid
+  meeting Meeting? @relation(fields:[meetingId],references:[id],onDelete:Cascade)
+  assignedTo String? @db.Uuid
+  assignee User? @relation("AssignedActions",fields:[assignedTo],references:[id],onDelete:SetNull)
+  createdBy String? @db.Uuid
+  creator User? @relation("CreatedActions",fields:[createdBy],references:[id],onDelete:SetNull)
+  title String
+  description String @default("")
+  status ActionStatus @default(todo)
+  priority Priority @default(medium)
+  dueDate DateTime?
+  sourceQuote String @default("")
+  sourceTimestampSec Float @default(0)
+  confidence Float @default(1)
+  extractionKey String? @unique
+  notes String @default("")
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  activity Json @default("[]")
+  @@index([workspaceId,status,dueDate])
+  @@index([assignedTo])
+}
+model Participant {
+  id String @id @default(uuid()) @db.Uuid
+  meetingId String @db.Uuid
+  meeting Meeting @relation(fields:[meetingId],references:[id],onDelete:Cascade)
+  userId String? @db.Uuid
+  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
+  displayName String
+  email String?
+  talkTimeSeconds Int @default(0)
+}
+model Upload {
+  id String @id @default(uuid()) @db.Uuid
+  meetingId String @db.Uuid
+  meeting Meeting @relation(fields:[meetingId],references:[id],onDelete:Cascade)
+  filename String
+  size BigInt
+  offset BigInt @default(0)
+  completed Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+model Invitation {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  email String
+  role Role @default(member)
+  message String @default("")
+  tokenHash String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@unique([workspaceId,email])
+}
+model Integration {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  provider String
+  credentials String
+  settings Json @default("{}")
+  createdAt DateTime @default(now())
+  @@unique([workspaceId,provider])
+}
+model ApiKey {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  name String
+  createdBy String @db.Uuid
+  creator User @relation(fields:[createdBy],references:[id],onDelete:Cascade)
+  keyHash String @unique
+  prefix String
+  permissions Json
+  lastUsedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+}
+model Webhook {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  url String
+  secretHash String
+  secretEncrypted String
+  events Json
+  isActive Boolean @default(true)
+  successCount Int @default(0)
+  failureCount Int @default(0)
+  lastTriggeredAt DateTime?
+  deliveries WebhookDelivery[]
+  createdAt DateTime @default(now())
+}
+model WebhookDelivery {
+  id String @id @default(uuid()) @db.Uuid
+  webhookId String @db.Uuid
+  webhook Webhook @relation(fields:[webhookId],references:[id],onDelete:Cascade)
+  event String
+  payload Json
+  status Int?
+  error String?
+  createdAt DateTime @default(now())
+}
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  title String
+  body String
+  read Boolean @default(false)
+  dedupeKey String @unique
+  sentAt DateTime?
+  createdAt DateTime @default(now())
+}
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  workspaceId String @db.Uuid
+  workspace WorkSpace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  actorId String
+  event String
+  details Json @default("{}")
+  createdAt DateTime @default(now())
+  @@index([workspaceId,createdAt])
+}
+
+model AuthToken {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ kind String
+ tokenHash String @unique
+ expiresAt DateTime
+ usedAt DateTime?
+ createdAt DateTime @default(now())
+}
