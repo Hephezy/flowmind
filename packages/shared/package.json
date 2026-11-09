@@ -1,0 +1,15 @@
+{
+  "name": "@flowmind/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "^3.25.0"
+  }
+}
