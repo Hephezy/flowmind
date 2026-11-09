@@ -1,0 +1,25 @@
+# Specification coverage
+
+“Implemented” means source is present, not that external accounts have been deployed or certified.
+
+| Area                      | Delivered                                                                                                    | Boundary                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Landing and visual design | Dark theme, local fonts, product visuals, features, pricing                                                  | Real customer testimonials must be supplied                                                                  |
+| Dashboard                 | Meeting/action counts, completion, overdue, recent meetings, reminders                                       | Demo data is explicitly sample data                                                                          |
+| Meeting capture           | File selection, drag/drop, browser microphone, metadata, private flag, pasted transcript                     | Microphone requires browser permission; live upload requires API                                             |
+| Large uploads             | Resumable 5 MiB chunks, locks, offsets, 2 GiB bound, persistent storage adapter                              | Requires persistent staging disk and reverse-proxy body limits                                               |
+| Meeting links/import      | Recording browsers for Zoom, Google Drive, Teams; optional scheduled import                                  | A call URL cannot join or access the recording without provider authorization                                |
+| Processing                | Six stages on five queues, per-stage retries, cancellation, retry, reprocess                                 | AI provider credentials and FFmpeg required                                                                  |
+| Transcript                | Timestamps, search, source navigation, authenticated playback, text export                                   | Whisper cannot diarize; diarization model supported with cross-chunk identity limits                         |
+| AI extraction             | JSON validation, confidence threshold, assignee match, exact quote checks, default dates                     | Real provider quality is unverified; human review remains useful                                             |
+| Summary/insights          | Summary, decisions, topics, speaker talk time, completion, sentiment                                         | Includes duration comparison with up to 10 recent accessible meetings                                        |
+| Action tracker            | Board drag/drop, editable drawer, filters, sorted list, bulk completion, CSV, manual actions, notes/activity | Member permissions enforced by API                                                                           |
+| Notifications             | In-app, email adapter, Slack adapter, due windows, daily overdue/weekly digests, quiet hours                 | Teams delivery requires Graph scopes plus team/channel IDs                                                   |
+| Workspaces                | Isolated data, owner/admin/member, invite/resend/cancel, workspace switch, privacy                           | Deletion requires a password and explicit identity confirmation                                              |
+| Profile/security          | Name/timezone/language, passwords, TOTP, one-use backup codes, sessions, data export                         | Email links require Resend; backups are shown once                                                           |
+| Integrations              | OAuth/token configuration, encrypted secrets, provider imports and task/page exports, signed webhooks        | Requires provider app setup and external-account acceptance tests                                            |
+| Billing                   | Stripe checkout, portal, verified subscription webhooks, plans/usage UI                                      | Configured quotas, referral attribution and invoice records are included; business policies must be supplied |
+| API keys/logs             | Scoped hashed keys, one-time reveal, revocation, webhook delivery records, audit details                     | Rate limits and log retention should be tuned for launch                                                     |
+| Engineering               | Turborepo, shared types, Prisma schema/migration, Docker, CI, deployment guides, unit/DOM/API tests          | Production infrastructure and custom domain need your account configuration                                  |
+
+The source is a substantial working implementation, with the remaining product work named here and in the README. The hosted Site is a local-data demo of the interface; the separate NestJS service must be deployed to enable live processing.
