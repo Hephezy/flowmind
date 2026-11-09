@@ -1,0 +1,10 @@
+node_modules/
+.next/
+dist/
+out/
+.turbo/
+.env
+.env.local
+apps/api/data/
+*.log
+.openai/*.local.*

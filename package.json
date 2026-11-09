@@ -1,0 +1,36 @@
+{
+  "name": "flowmind",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "db:generate": "npm run db:generate -w @flowmind/api",
+    "db:migrate": "npm run db:migrate -w @flowmind/api",
+    "db:seed": "npm run db:seed -w @flowmind/api",
+    "build:demo": "node scripts/build-demo.mjs",
+    "test:e2e": "npm run build -w @flowmind/shared && npm run build -w @flowmind/api && node scripts/e2e.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^22.0.0",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.9",
+    "tsx": "^4.20.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@11.9.0"
+}
